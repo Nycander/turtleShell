@@ -141,6 +141,12 @@ För att testa funktionaliten av vårat program har vi valt att köra följande 
 		\end{checklist}}
 \end{testcase}
 
+\begin{testcase}{Tomma strängen}
+	\prereq{Kommandotolken är startad.}
+	\actions{Ge ingen input, tryck bara enter.}
+	\result{Kommandotolken kraschar inte.}
+\end{testcase}
+
 \begin{testcase}{Start av bakgrundsprocess}
 	\prereq{\begin{checklist}
 		\item Kommandotolken är startad.
