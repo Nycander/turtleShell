@@ -43,6 +43,9 @@
 % Kommando för kommandorader
 \newcommand{\cmdline}[1]{\mbox{\textbf{\texttt{> #1}}}}
 
+% Kommandon för testfall
+\usepackage{testcases}
+
 % Sidhuvud/sidfot
 \usepackage{fancyhdr}
 \setlength{\headheight}{15pt}
@@ -114,9 +117,6 @@
 	
 	\verb!//TODO!
 
-
-
-
 \end{enumerate}
 
 \newpage
@@ -127,103 +127,121 @@
 
 För att testa funktionaliten av vårat program har vi valt att köra följande kontrollerade tester:
 
-\begin{table}[H]
-	% PAGER satt
-	\begin{tabularx}{\textwidth}{>{\bfseries}r  X }
-		\multicolumn{2}{c}{\large\textbf{Testfall 1}} \\[0.1cm]
-		\toprule	Beskrivning				& Inläsning av PAGER-variabeln \\
-		\midrule	Förkrav					& Miljövariabeln \texttt{PAGER} är satt till ``pg''. \\
-		\midrule	Körning					& \cmdline{./digenv} \\
-		\midrule	Förväntat resultat		& Programmet ``pg'' startas med godtyckligt innehåll. \\
-		\bottomrule
-	\end{tabularx}
-\end{table}
+\begin{testcase}{Start av förgrundsprocess}
+	\prereq{\begin{checklist}
+		\item Kommandotolken är startad.
+		\item Programmet \texttt{echo} finns.
+	\end{checklist}}
+	\actions{
+		\cmdline{echo "Test"}
+	}
+	\result{\begin{checklist}
+			\item ``Test'' skrivs ut i kommandotolken.
+			\item \texttt{echo} terminerar ordentligt (kontrollera med \cmdline{ps -aux}).
+		\end{checklist}}
+\end{testcase}
 
-\begin{table}[H]
-	% PAGER inte satt (med less)
-	\begin{tabularx}{\textwidth}{>{\bfseries}r  X }
-		\multicolumn{2}{c}{\large\textbf{Testfall 2}} \\[0.1cm]
-		\toprule	Beskrivning				& Misslyckad inläsning av PAGER-variabeln \\
-		\midrule	Förkrav					& Miljövariabeln \texttt{PAGER} finns inte, programmet ``less'' finns i path:en. \\
-		\midrule	Körning					& \cmdline{./digenv} \\
-		\midrule	Förväntat resultat		& Programmet ``less'' startas med godtyckligt innehåll. \\
-		\bottomrule
-	\end{tabularx}
-\end{table}
+\begin{testcase}{Start av bakgrundsprocess}
+	\prereq{\begin{checklist}
+		\item Kommandotolken är startad.
+		\item Programmet \texttt{sleep} finns.
+		\item Programmet \texttt{echo} finns.
+	\end{checklist}}
+	\actions{\begin{actionlist}
+		\item \cmdline{sleep 10\&}
+		\item \cmdline{echo "Test"}
+	\end{actionlist}
+	}
+	\result{\begin{checklist}
+			\item Man behöver inte vänta 10 sekunder innan man får köra \cmdline{echo "Test"}
+			\item ``Test'' skrivs ut i kommandotolken.
+			\item Programmen terminerar ordentligt (kontrollera med \cmdline{ps -aux}).
+		\end{checklist}}
+\end{testcase}
 
-\begin{table}[H]
-	% PAGER inte satt (utan less)
-	\begin{tabularx}{\textwidth}{>{\bfseries}r  X }
-		\multicolumn{2}{c}{\large\textbf{Testfall 3}} \\[0.1cm]
-		\toprule	Beskrivning				& Misslyckad inläsning av PAGER-variabeln, utan ``less'' \\
-		\midrule	Förkrav					& Miljövariabeln \texttt{PAGER} finns inte, programmet ``less'' finns inte i path:en. Programmet ``more'' finns i path:en. \\
-		\midrule	Körning					& \cmdline{./digenv} \\
-		\midrule	Förväntat resultat		& Programmet ``more'' startas med godtyckligt innehåll. \\
-		\bottomrule
-	\end{tabularx}
-\end{table}
+\begin{testcase}{Bakgrundsprocesser och förgrundsprocesser}
+	\prereq{\begin{checklist}
+		\item Kommandotolken är startad.
+		\item Programmet \texttt{sleep} finns.
+	\end{checklist}}
+	\actions{\begin{actionlist}
+		\item \cmdline{sleep 5\&}
+		\item \cmdline{sleep 10}
+	\end{actionlist}
+	}
+	\result{\begin{checklist}
+			\item Programmen terminerar i rätt ordning (först \cmdline{sleep \&}, sedan \cmdline{sleep 10}).
+			\item Programmen terminerar ordentligt (kontrollera med \cmdline{ps -aux}).
+		\end{checklist}}
+\end{testcase}
 
-\begin{table}[H]
-	\begin{tabularx}{\textwidth}{>{\bfseries}r  X }
-		\multicolumn{2}{c}{\large\textbf{Testfall 4}} \\[0.1cm]
-		\toprule	Beskrivning				& Normal användning med filtrering \\
-		\midrule	Förkrav					& Miljövariabeln \texttt{PAGER} är satt till ``less''. \\
-		\midrule	Körning					& \cmdline{./digenv PATH} \\
-		\midrule	Förväntat resultat		& \begin{itemize}
-  			\setlength{\itemsep}{0pt}
-  			\setlength{\parskip}{0pt}
-  			\setlength{\parsep}{0pt}
-			\item Utskrift och tillstånd ska vara ekvivalent med: \cmdline{printenv | grep PATH | sort | less}
-			\item Inga oavslutade barn-procceser finns. Verifiera med \cmdline{ps -ef}.
-			\item Inga temporära datafiler har skapats.
-		\end{itemize} \\
-		\bottomrule
-	\end{tabularx}
-\end{table}
+\begin{testcase}{Avslutning med ``exit''}
+	\prereq{Kommandotolken är startad.}
+	\actions{\cmdline{./exit}}
+	\result{\begin{checklist}
+		\item Kommandotolken avslutas.
+		\item Inga zombie-processer finns kvar (kontrollera med \cmdline{ps -aux}).
+	\end{checklist}}
+\end{testcase}
 
-\begin{table}[H]
-	\begin{tabularx}{\textwidth}{>{\bfseries}r  X }
-		\multicolumn{2}{c}{\large\textbf{Testfall 5}} \\[0.1cm]
-		\toprule	Beskrivning				& Normal användning med filtrering och flaggor \\
-		\midrule	Förkrav					& Miljövariabeln \texttt{PAGER} är satt till ``less''. \\
-		\midrule	Körning					& \cmdline{./digenv -i pAtH} \\
-		\midrule	Förväntat resultat		& Samma som testfall 3. \\
-		\bottomrule
-	\end{tabularx}
-\end{table}
+\begin{testcase}{Byte av arbetskatalog}
+	\prereq{\begin{checklist}
+		\item Kommandotolken är startad.
+		\item Environmentvariabeln \texttt{HOME} är satt till ett känt värde.
+	\end{checklist}}
+	\actions{\begin{actionlist}
+		\item Exekvera ``\cmdline{cd}''
+		\item Exekvera ``\cmdline{pwd}'' och notera resultatet
+		\item Exekvera ``\cmdline{cd /etc}''
+		\item Exekvera ``\cmdline{pwd}'' och notera resultatet
+	\end{actionlist}}
+	\result{\begin{checklist}
+		\item Första resultatet borde vara samma som värdet på \texttt{HOME}-variabeln.
+		\item Andra resultatet borde vara ``/etc''.
+	\end{checklist}}
+\end{testcase}
 
-\begin{table}[H]
-	\begin{tabularx}{\textwidth}{>{\bfseries}r  X }
-		\multicolumn{2}{c}{\large\textbf{Testfall 6}} \\[0.1cm]
-		\toprule	Beskrivning				& Syntaxfel i argument till grep \\
-		\midrule	Förkrav					& - \\
-		\midrule	Körning					& \cmdline{./digenv -.} \\
-		\midrule	Förväntat resultat		& \begin{itemize}
-  			\setlength{\itemsep}{0pt}
-  			\setlength{\parskip}{0pt}
-  			\setlength{\parsep}{0pt}
-			\item Programmet avbryts.
-			\item Ett felmeddelande kan skrivas till \texttt{stderr}.
-			\item Resultatet av ``\cmdline{echo \$?}'' ska inte bli $0$.
-			\item Inga oavslutade barn-procceser finns. Verifiera med \cmdline{ps -ef}.
-			\item Inga temporära datafiler har skapats.
-		\end{itemize} \\
-		\bottomrule
-	\end{tabularx}
-\end{table}
+\begin{testcase}{Informationsutskrifter}
+	\prereq{\begin{checklist}
+		\item Kommandotolken är startad.
+		\item Programmet \texttt{sleep} finns.
+	\end{checklist}}
+	\actions{\cmdline{sleep 2}}
+	\result{
+		Följande information skrivs ut:
+		\begin{checklist}
+			\item Processid
+			\item Att det är en förgrundsprocess.
+			\item Att processen skapades och terminerades.
+			\item Statistik över hur lång tid kommandot tog att genomföra.
+		\end{checklist}
+	}
+\end{testcase}
+
+\begin{testcase}{Terminering med Ctrl+c}
+	\prereq{\begin{checklist}
+		\item Kommandotolken är startad.
+		\item Programmet \texttt{sleep} finns.
+	\end{checklist}}
+	\actions{\begin{actionlist}
+		\item \cmdline{sleep 20}
+		\item Avsluta exekveringen med \texttt{Ctrl+c} innan programmet avslutar sig själv.
+	\end{actionlist}}
+	\result{\begin{checklist}
+		\item \texttt{sleep} avslutas (kontrollera med ps -aux).
+		\item Kommandotolken avslutas \textbf{inte}.
+	\end{checklist}}
+\end{testcase}
 
 \newpage
 \section{Resultat}
 
 Körning av ovanstående standardiserade testfall gav följande resultat.
 
-\begin{tabularx}{\textwidth}{>{\bfseries}l  X }
-	\multicolumn{2}{c}{\large\textbf{Testfallsresultat}} \\[0.1cm]
-	\toprule
-	1. ??? 							& ??? \\
-	\bottomrule
-\end{tabularx}
 
+
+\begin{testresults}{\today}
+\end{testresults}
 
 \newpage
 \section{Labbutvärdering}
