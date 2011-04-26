@@ -16,7 +16,7 @@
  * Tries to parse out a command line argument array from a given string.
  * Will return the amount of parsed arguments.
  */
-int parse_input(char input[CMD_LENGTH], char * args[MAX_ARGUMENTS+1])
+int parse_input(char input[CMD_LENGTH], char * args[MAX_ARGUMENTS+1], int * background_process)
 {
 	int i = 0;
 	int len = 0;
@@ -33,9 +33,23 @@ int parse_input(char input[CMD_LENGTH], char * args[MAX_ARGUMENTS+1])
 	{
 		/* Find additional arguments */
 		while(i <= MAX_ARGUMENTS && (args[i++] = strtok(NULL, " ")) != NULL);
+		--i;
 
 		/* Finish argument array */
 		args[i] = NULL;
+
+		/* Do we find a & at the end? Remove it and flag for background process */
+		len = strlen(args[i-1]);
+		if (args[i-1][len-1] == '&')
+		{
+			args[i-1][len-1] = '\0';
+			*(background_process) = 1;
+		}
+		else
+		{
+			*(background_process) = 0;
+		}
+
 		return i;
 	}
 
@@ -80,8 +94,16 @@ void exec_fg_cmd(int argc, char * argv[MAX_ARGUMENTS+1])
 	gettimeofday(&before, NULL);
 	if (cpid == CHILD)
 	{
-		execvp(argv[0], argv);
-		exit(EXIT_FAILURE);
+		status = execvp(argv[0], argv);
+		if (status == -1)
+		{
+			fprintf(stderr, "%s: %s.\n", argv[0], strerror(errno));
+			exit(EXIT_FAILURE);
+		}
+		else
+		{
+			exit(EXIT_SUCCESS);
+		}
 	}
 	printf("Spawned foreground process pid: %d\n", cpid);
 	/* Wait for process to actually exit */
@@ -116,6 +138,7 @@ int main(int argc, char * argv[])
 {
 	int running = 1;
 	int argsc = 0;
+	int background_process = 0;
 	char * args[MAX_ARGUMENTS+1];
 	char input[CMD_LENGTH];
 
@@ -152,11 +175,20 @@ int main(int argc, char * argv[])
 		}
 
 		/* Get input and parse */
-		argsc = parse_input(input, args);
+		argsc = parse_input(input, args, &background_process);
 
 		/* Run command */
 		if (argsc > 0)
-			exec_fg_cmd(argsc, args);
+		{
+			if (background_process)
+			{
+				printf("Supposed to run bg process.\n");
+			}
+			else
+			{
+				exec_fg_cmd(argsc, args);
+			}
+		}
 	}
 	return 0;
 }
