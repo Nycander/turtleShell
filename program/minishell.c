@@ -6,11 +6,20 @@
 #include <stdlib.h>
 #include <errno.h>
 
+/* Use signal detection or polling for cleaning up dead children? */
+#define SIGNALDETECTION 0
+
+/* Parameters for changing the limitations of the shell */
 #define MAX_ARGUMENTS 5
 #define CMD_LENGTH 70
 
 /* Self-documentation */
 #define CHILD 0
+
+char * current_dir;
+int    current_dir_len = 0;
+
+
 
 /*
  * Tries to parse out a command line argument array from a given string.
@@ -105,7 +114,8 @@ void exec_fg_cmd(int argc, char * argv[MAX_ARGUMENTS+1])
 			exit(EXIT_SUCCESS);
 		}
 	}
-	printf("Spawned foreground process pid: %d\n", cpid);
+	char spid[20];	sprintf(spid, "[pid %d]", cpid);
+	printf("%*s Spawned foreground process. \n", current_dir_len+1, spid);
 	/* Wait for process to actually exit */
 	do
 	{
@@ -113,17 +123,51 @@ void exec_fg_cmd(int argc, char * argv[MAX_ARGUMENTS+1])
 	} while(! WIFEXITED(status));
 	gettimeofday(&after, NULL);
 
-	printf("Foreground process %d terminated.\n", cpid);
 	long diffms = (after.tv_usec-before.tv_usec)/1000 + (after.tv_sec-before.tv_sec)*1000;
-	printf("Wall clock time spent:\t %ld ms.\n", diffms);
+	printf("%*s Foreground process terminated.\n", current_dir_len+1, spid);
+	printf("%*s Wall clock time spent:\t %ld ms.\n", current_dir_len+1, spid, diffms);
 
 	/* Check result */
     status = WEXITSTATUS(status);
 }
 
+/*
+ * Forks and runs a specified command argument array in the child process.
+ */
+void exec_bg_cmd(int argc, char * argv[MAX_ARGUMENTS+1])
+{
+	int status = 0, cpid = 0;
+
+	if (argc < 1)
+		return;
+	
+	cpid = fork();
+	if (cpid == CHILD)
+	{
+		status = execvp(argv[0], argv);
+		if (status == -1)
+		{
+			fprintf(stderr, "%s: %s.\n", argv[0], strerror(errno));
+			exit(EXIT_FAILURE);
+		}
+		else
+		{
+			exit(EXIT_SUCCESS);
+		}
+	}
+	char spid[20];	sprintf(spid, "[pid %d]", cpid);
+	printf("%*s Spawned background process.\n", current_dir_len+1, spid);
+}
+
+/*
+ * Retrieves and simplies the current working directory.
+ * Will use the array parameter and return the same pointer if all went well.
+ */
 char * get_workingdir(char buf[128])
 {
 	char * cwd = getcwd(buf, 128);
+
+	/* Attempt replacing home directory with '~' */
 	char * home = getenv("HOME");
 	int hlen = strlen(home);
 	if (strncmp(cwd, home, hlen) == 0)
@@ -131,7 +175,49 @@ char * get_workingdir(char buf[128])
 		cwd[0] = '~';
 		strcpy(cwd+1, cwd+hlen);
 	}
+	current_dir = cwd;
+	current_dir_len = strlen(cwd);
 	return cwd;
+}
+
+/* 
+ * Attempt to release all terminated child processes. 
+ */
+void release_children()
+{
+	int pid, status;
+	while(1)
+	{
+		pid = waitpid(-1, &status, WNOHANG);
+
+		if (pid == -1)
+		{
+			if (errno == EINTR)
+				continue;
+			break;
+		}
+		else if (pid == 0)
+		{
+			break;
+		}
+		/* Did the process terminate? Print message. */
+		else if (WIFEXITED(status))
+		{
+			char spid[20];	sprintf(spid, "[pid %d]", pid);
+			printf("%*s Background process terminated.\n", current_dir_len+1, spid);
+		}
+	}
+}
+
+/*
+ * Signal handler for termination of background processes.
+ */
+void child_termination_handler(int signum)
+{
+	if (signum != SIGCHLD)
+		return;
+	
+	release_children();	
 }
 
 int main(int argc, char * argv[])
@@ -142,13 +228,39 @@ int main(int argc, char * argv[])
 	char * args[MAX_ARGUMENTS+1];
 	char input[CMD_LENGTH];
 
+	printf("Welcome to...\n");
+	printf(" ______               __    ___             \n");
+	printf("/\\__  _\\             /\\ \\__/\\_ \\            \n");
+	printf("\\/_/\\ \\/ __  __  _ __\\ \\ ,_\\//\\ \\      __   \n");
+	printf("   \\ \\ \\/\\ \\/\\ \\/\\`'__\\ \\ \\/ \\ \\ \\   /'__`\\ \n");
+	printf("    \\ \\ \\ \\ \\_\\ \\ \\ \\/ \\ \\ \\_ \\_\\ \\_/\\  __/ \n");
+	printf("     \\ \\_\\ \\____/\\ \\_\\  \\ \\__\\/\\____\\ \\____\\\n");
+	printf("      \\/_/\\/___/  \\/_/   \\/__/\\/____/\\/____/\n");
+	printf("                                 shell v 0.1   \n");
+                                            
+
+
+#if SIGNALDETECTION
+	/* Set up signal handler for child processes. */
+	struct sigaction action;
+	action.sa_handler = child_termination_handler;
+	sigemptyset(&action.sa_mask);
+	action.sa_flags = 0;
+	sigaction(SIGCHLD, &action, NULL);
+#endif
+
 	while(running)
 	{
+		#if ! SIGNALDETECTION 
+		/* Poll for dead children and clean up */
+		release_children();
+		#endif
+
 		/* Read command line from prompt */	
 		char buf[128];
 		printf("%s>", get_workingdir(buf));
+		memset(input, 0, CMD_LENGTH);
 		fgets(input, CMD_LENGTH, stdin);
-
 		/* Exit? */
 		if (strcmp(input, "exit\n") == 0)
 		{
@@ -184,7 +296,7 @@ int main(int argc, char * argv[])
 		{
 			if (background_process)
 			{
-				printf("Supposed to run bg process.\n");
+				exec_bg_cmd(argsc, args);
 			}
 			else
 			{
@@ -192,5 +304,6 @@ int main(int argc, char * argv[])
 			}
 		}
 	}
+	release_children();
 	return 0;
 }
