@@ -32,8 +32,8 @@ int parse_input(char input[CMD_LENGTH], char * args[MAX_ARGUMENTS+1], int * back
 	if (args[0] != NULL)
 	{
 		/* Find additional arguments */
-		while(i <= MAX_ARGUMENTS && (args[i++] = strtok(NULL, " ")) != NULL);
-		--i;
+		while(i <= MAX_ARGUMENTS && (args[i] = strtok(NULL, " ")) != NULL)
+			i++;
 
 		/* Finish argument array */
 		args[i] = NULL;
