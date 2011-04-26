@@ -160,13 +160,15 @@ int main(int argc, char * argv[])
 		{
 			int len = strlen(input);
 			input[len-1] = '\0'; 	/* Remove trailing newline */
+
+			/* Special case for typing merely "cd", go to home dir. */
 			if (len == 3)
 			{
 				change_working_directory(getenv("HOME"));
 			}
 			else
 			{
-				char path[70]; /* Skip "cd ", the rest should be out path */
+				char path[70]; /* Skip "cd ", the rest should be our path */
 				strcpy(path, input+3);
 				change_working_directory(path);
 			}
