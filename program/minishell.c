@@ -7,7 +7,7 @@
 #include <errno.h>
 
 /* Use signal detection or polling for cleaning up dead children? */
-#define SIGNALDETECTION 0
+#define SIGNALDETECTION 1
 
 /* Parameters for changing the limitations of the shell */
 #define MAX_ARGUMENTS 5
@@ -18,8 +18,7 @@
 
 char * current_dir;
 int    current_dir_len = 0;
-
-
+struct sigaction sigint_action;
 
 /*
  * Tries to parse out a command line argument array from a given string.
@@ -47,11 +46,11 @@ int parse_input(char input[CMD_LENGTH], char * args[MAX_ARGUMENTS+1], int * back
 		/* Finish argument array */
 		args[i] = NULL;
 
-		/* Do we find a & at the end? Remove it and flag for background process */
+		/* Do we find a & at the end? - flag for background process */
 		len = strlen(args[i-1]);
 		if (args[i-1][len-1] == '&')
 		{
-			args[i-1][len-1] = '\0';
+			args[i-1][len-1] = '\0'; /* Remove &-char */
 			*(background_process) = 1;
 		}
 		else
@@ -65,6 +64,10 @@ int parse_input(char input[CMD_LENGTH], char * args[MAX_ARGUMENTS+1], int * back
 	return 0;
 }
 
+/*
+ * Changes the working directory to a given path.
+ * On failure, it will try the HOME directory instead.
+ */
 void change_working_directory(char path[CMD_LENGTH])
 {
 	int result = 0;
@@ -103,6 +106,9 @@ void exec_fg_cmd(int argc, char * argv[MAX_ARGUMENTS+1])
 	gettimeofday(&before, NULL);
 	if (cpid == CHILD)
 	{
+		/* Enable keyboard interrupts for foregrounds processes. */
+		sigaction(SIGINT, &sigint_action, NULL);
+		/* Execute program */
 		status = execvp(argv[0], argv);
 		if (status == -1)
 		{
@@ -120,15 +126,16 @@ void exec_fg_cmd(int argc, char * argv[MAX_ARGUMENTS+1])
 	do
 	{
 		waitpid(cpid, &status, 0);
-	} while(! WIFEXITED(status));
-	gettimeofday(&after, NULL);
+	} while(! WIFEXITED(status) && ! WIFSIGNALED(status));
 
-	long diffms = (after.tv_usec-before.tv_usec)/1000 + (after.tv_sec-before.tv_sec)*1000;
-	printf("%*s Foreground process terminated.\n", current_dir_len+1, spid);
-	printf("%*s Wall clock time spent:\t %ld ms.\n", current_dir_len+1, spid, diffms);
+	if (WIFEXITED(status))
+	{
+		gettimeofday(&after, NULL);
 
-	/* Check result */
-    status = WEXITSTATUS(status);
+		long diffms = (after.tv_usec-before.tv_usec)/1000 + (after.tv_sec-before.tv_sec)*1000;
+		printf("%*s Foreground process terminated.\n", current_dir_len+1, spid);
+		printf("%*s Wall clock time spent:\t %ld ms.\n", current_dir_len+1, spid, diffms);
+	}
 }
 
 /*
@@ -227,6 +234,22 @@ int main(int argc, char * argv[])
 	int background_process = 0;
 	char * args[MAX_ARGUMENTS+1];
 	char input[CMD_LENGTH];
+	struct sigaction sigchld_action;
+	struct sigaction ignore_action;
+                                            
+#if SIGNALDETECTION
+	/* Set up signal handler for child processes. */
+	sigchld_action.sa_handler = child_termination_handler;
+	sigemptyset(&sigchld_action.sa_mask);
+	sigchld_action.sa_flags = 0;
+	sigaction(SIGCHLD, &sigchld_action, NULL);
+#endif
+
+	/* Make turtleShell "immortal" to interrupts from keyboard. */
+	ignore_action.sa_handler = SIG_IGN;
+	sigemptyset(&ignore_action.sa_mask);
+	ignore_action.sa_flags = 0;
+	sigaction(SIGINT, &ignore_action, &sigint_action);
 
 	printf("Welcome to...\n");
 	printf(" ______               __    ___             \n");
@@ -237,17 +260,6 @@ int main(int argc, char * argv[])
 	printf("     \\ \\_\\ \\____/\\ \\_\\  \\ \\__\\/\\____\\ \\____\\\n");
 	printf("      \\/_/\\/___/  \\/_/   \\/__/\\/____/\\/____/\n");
 	printf("                                 shell v 0.1   \n");
-                                            
-
-
-#if SIGNALDETECTION
-	/* Set up signal handler for child processes. */
-	struct sigaction action;
-	action.sa_handler = child_termination_handler;
-	sigemptyset(&action.sa_mask);
-	action.sa_flags = 0;
-	sigaction(SIGCHLD, &action, NULL);
-#endif
 
 	while(running)
 	{
@@ -304,6 +316,7 @@ int main(int argc, char * argv[])
 			}
 		}
 	}
+	/* Clean up any orphans */
 	release_children();
 	return 0;
 }
