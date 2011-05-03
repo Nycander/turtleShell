@@ -89,12 +89,16 @@ förgrunds- och bakgrunds-processer.
     tillbaka till miniShell prompten.
 
 	\item[2.] \textbf{\footnotesize Vad händer om man inte i kommandotolken exekverar wait() för en barn-process som avslutas?}
+
 	Barn-processen kommer finnas kvar som zombieprocess tills dess att skal
     programmet avslutas.
 
 	\item[3.] \textbf{\footnotesize Hur skall man utläsa SIGSEGV?}
 
+    \textbf{Sig}nal \textbf{seg}mentation \textbf{v}iolation. 
+
 	\item[4.] \textbf{\footnotesize Varför kan man inte blockera SIGKILL?}
+
     För att man inte ska kunna skapa odödliga processer.
 
 	\item[5.] \textbf{\footnotesize Hur skall man utläsa deklarationen void (*disp)(int))?}
@@ -103,12 +107,15 @@ förgrunds- och bakgrunds-processer.
     tar en int som parameter.
 
 	\item[6.] \textbf{\footnotesize Vilket systemanrop använder sigset(3C) troligtvis för att installera en signalhanterare?}
+
 	Förmodligen sigaction.
 
 	\item[7.] \textbf{\footnotesize Hur gör man för att din kommandotolk inte skall termineras då en förgrundsprocess i den termineras med <Ctrl-c>?}
+
 	Vi ignorerar inkommande SIGINT signaler, med hjälp av ett anrop av sigaction.
 
 	\item[8.] \textbf{\footnotesize Studera körningsexemplet nedan och förklara varför man inte har bytt “working directory” till /home/ds/robertr när man avslutat miniShell:et?}
+
     cd som förmodligen är implementerad med chdir ändrar bara “working
     directory” på den process som anropar den. I det här fallet är det miniShell
     som anropar funktionen och därför ändras bara miniShells “working directory”
@@ -124,6 +131,10 @@ Programmet utvecklades i enlighet med den föreslagna arbetsgången. Vad som hj�
 Bakgrundsprocesser skapades enkelt genom att inte göra någon låsande \verb!wait! efter \verb!fork!:en, utan istället installera en signalhanterare som kallade på \verb!waitpid! med \verb!WNOHANG!-flaggan så att funktionen returnerar direkt. Alternativet, ``polling'', implementeras genom att köra waitpid i början av loopen som kör nya processer, så att bakgrundsprocesser rensas upp efter att en förgrundsprocess har kört.
 
 Immunitet mot keyboard interrupts (SIGINT) görs genom att en signalhanterare installeras med handlerfunktionen \verb!SIG_IGN!. Standardhanteraren sparas undan för att sedan återinstalleras i nya förgrundsprocesser vilket gör att förgrundsprocesser kan avslutas med \verb!Ctrl+c!, men inte skalprogrammet i sig.
+
+Koden finns i mappen: \verb!/afs/nada.kth.se/home/t/u1itxl5t/os/miniShell! på
+\verb!afs! i mappen finns en makefil som kompilerar programmet korrekt.
+
 
 \newpage
 \section{Tester}
@@ -251,8 +262,8 @@ För att testa funktionaliten av vårat program har vi valt att köra följande 
 \newpage
 \section{Resultat}
 
-Första testrundan misslyckades på testfall ''Bakgrundsprocesser och
-förgrundsprocesser´´, bakgrundsprocessen dödade förgrundsprocessen när den kört
+Första testrundan misslyckades på testfall ``Bakgrundsprocesser och
+förgrundsprocesser'', bakgrundsprocessen dödade förgrundsprocessen när den kört
 klart. Detta åtgärdades och på nästa testrunda blev samtliga tester godkända:
 
 
@@ -283,10 +294,11 @@ klart. Detta åtgärdades och på nästa testrunda blev samtliga tester godkänd
 \newpage
 \section{Labbutvärdering}
 
-\newpage
-\section{Källkod}
-
-\lstset{tabsize=2}
-\footnotesize{\lstinputlisting[language=C]{../program/minishell.c}}
+Bra kravspec, bra förslag av arbetsgång. Delarna som beskriver \verb!man!,
+\verb!fork!, \verb!exec! och signaler finns i stor utsträckning i tidigare
+labb-PM. Det skulle nog bli mer lättläst om dessa delar låg i ett separat blad
+som man istället hänvisar till. Till exempel kan man lägga dessa texter i en
+gemensam kurs bunt; På så sätt blir det tydligare vad som är krav på labben och
+vad som är information om olika system man använder.
 
 \end{document}
