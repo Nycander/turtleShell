@@ -234,10 +234,10 @@ int main(int argc, char * argv[])
 	int background_process = 0;
 	char * args[MAX_ARGUMENTS+1];
 	char input[CMD_LENGTH];
-	struct sigaction sigchld_action;
 	struct sigaction ignore_action;
-                                            
+
 #if SIGNALDETECTION
+	struct sigaction sigchld_action;
 	/* Set up signal handler for child processes. */
 	sigchld_action.sa_handler = child_termination_handler;
 	sigemptyset(&sigchld_action.sa_mask);
