@@ -80,11 +80,14 @@
 
 \begin{enumerate}
 	\item[1.] \textbf{\footnotesize Motivera varför det ofta är bra att exekvera kommandon i en separat process.}
-	
-	\verb!//TODO!
+
+	Om programmet krachar är det enklare att komma tillbaka till prompten och
+    det blir lättare att implementera \verb!Ctrl+c! och \verb!Ctrl+z! eftersom
+    shell processen kan lyssna efter input.
 
 	\item[2.] \textbf{\footnotesize Vad händer om man inte i kommandotolken exekverar wait() för en barn-process som avslutas?}
-	
+	Barn-processen kommer finnas kvar som zombieprocess tills dess att shell
+    programmet avslutas.
 	\verb!//TODO!
 
 
@@ -94,13 +97,13 @@
 
 
 	\item[4.] \textbf{\footnotesize Varför kan man inte blockera SIGKILL?}
-	
-	\verb!//TODO!
+    För att man inte ska kunna skapa odödliga processer.
 
 
 	\item[5.] \textbf{\footnotesize Hur skall man utläsa deklarationen void (*disp)(int))?}
 	
-	\verb!//TODO!
+    Det är en funktionspekare som pekar på en funktion som returnerar void och
+    tar en int som parameter.
 
 
 	\item[6.] \textbf{\footnotesize Vilket systemanrop använder sigset(3C) troligtvis för att installera en signalhanterare?}
