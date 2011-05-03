@@ -75,55 +75,53 @@
 \setcounter{page}{1}
 \section{Problembeskivning}
 
-\subsection{Förberedelsefrågor}
+Uppgiften bestod i att implementera ett minimalt UNIX-skal. Programmet ska såsom
+andra skal kunna starta program användaren matar in till dess att användaren
+avslutar med kommandot: \verb!exit!. Skalet ska dessutom kunna hantera
+förgrunds- och bakgrunds-processer.
 
+
+\subsection{Förberedelsefrågor}
 
 \begin{enumerate}
 	\item[1.] \textbf{\footnotesize Motivera varför det ofta är bra att exekvera kommandon i en separat process.}
 
-	Om programmet krachar är det enklare att komma tillbaka till prompten och
-    det blir lättare att implementera \verb!Ctrl+c! och \verb!Ctrl+z! eftersom
-    shell processen kan lyssna efter input.
+    Om ett program som miniShell startar krachar är det enklare att komma
+    tillbaka till miniShell prompten.
 
 	\item[2.] \textbf{\footnotesize Vad händer om man inte i kommandotolken exekverar wait() för en barn-process som avslutas?}
-	Barn-processen kommer finnas kvar som zombieprocess tills dess att shell
+	Barn-processen kommer finnas kvar som zombieprocess tills dess att skal
     programmet avslutas.
-	\verb!//TODO!
-
 
 	\item[3.] \textbf{\footnotesize Hur skall man utläsa SIGSEGV?}
-	
-	\verb!//TODO!
-
 
 	\item[4.] \textbf{\footnotesize Varför kan man inte blockera SIGKILL?}
     För att man inte ska kunna skapa odödliga processer.
-
 
 	\item[5.] \textbf{\footnotesize Hur skall man utläsa deklarationen void (*disp)(int))?}
 	
     Det är en funktionspekare som pekar på en funktion som returnerar void och
     tar en int som parameter.
 
-
 	\item[6.] \textbf{\footnotesize Vilket systemanrop använder sigset(3C) troligtvis för att installera en signalhanterare?}
-	
-	\verb!//TODO!
-
+	Förmodligen sigaction.
 
 	\item[7.] \textbf{\footnotesize Hur gör man för att din kommandotolk inte skall termineras då en förgrundsprocess i den termineras med <Ctrl-c>?}
-	
-	\verb!//TODO!
-
+	Vi ignorerar inkommande SIGINT signaler, med hjälp av ett anrop av sigaction.
 
 	\item[8.] \textbf{\footnotesize Studera körningsexemplet nedan och förklara varför man inte har bytt “working directory” till /home/ds/robertr när man avslutat miniShell:et?}
-	
-	\verb!//TODO!
+    cd som förmodligen är implementerad med chdir ändrar bara “working
+    directory” på den process som anropar den. I det här fallet är det miniShell
+    som anropar funktionen och därför ändras bara miniShells “working directory”
+    ändringen går därför förlorad när processen dör.
 
 \end{enumerate}
 
 \newpage
 \section{Programbeskrivning}
+Programmet skrevs såsom det det
+Programmet börjar med att ställa in signal hanteringen för miniShell processen.
+
 
 \newpage
 \section{Tester}
