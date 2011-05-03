@@ -1,3 +1,5 @@
+#define _XOPEN_SOURCE 500	/* We need this. */
+#include <signal.h>
 #include <unistd.h>		/* execvp */
 #include <stdio.h>		/* fgets, printf */
 #include <string.h>		/* strlen, strtok */
@@ -97,17 +99,16 @@ void change_working_directory(char path[CMD_LENGTH])
 void exec_fg_cmd(int argc, char * argv[MAX_ARGUMENTS+1])
 {
 	struct timeval before, after;
-	int status = 0, cpid = 0;
+	int status = 0, cpid = 0, ret = 0;
 
 	if (argc < 1)
 		return;
 	
+	/* Fork */
 	cpid = fork();
 	gettimeofday(&before, NULL);
 	if (cpid == CHILD)
 	{
-		/* Ignore deaths of other processes. */
-		sighold(SIGCHLD);
 		/* Enable keyboard interrupts for foregrounds processes. */
 		sigaction(SIGINT, &sigint_action, NULL);
 		/* Execute program */
@@ -127,15 +128,15 @@ void exec_fg_cmd(int argc, char * argv[MAX_ARGUMENTS+1])
 	/* Wait for process to actually exit */
 	do
 	{
-		waitpid(cpid, &status, 0);
-	} while(! WIFEXITED(status) && ! WIFSIGNALED(status));
+		ret = waitpid(cpid, &status, 0);
+	} while(! (ret == cpid && (WIFEXITED(status) || WIFSIGNALED(status))));
 
 	if (WIFEXITED(status))
 	{
 		gettimeofday(&after, NULL);
-
+		int sig = WTERMSIG(status);
 		long diffms = (after.tv_usec-before.tv_usec)/1000 + (after.tv_sec-before.tv_sec)*1000;
-		printf("%*s Foreground process terminated.\n", current_dir_len+1, spid);
+		printf("%*s Foreground process terminated with signal %d.\n", current_dir_len+1, spid, sig);
 		printf("%*s Wall clock time spent:\t %ld ms.\n", current_dir_len+1, spid, diffms);
 	}
 }
