@@ -119,9 +119,12 @@ förgrunds- och bakgrunds-processer.
 
 \newpage
 \section{Programbeskrivning}
-Programmet skrevs såsom det det
-Programmet börjar med att ställa in signal hanteringen för miniShell processen.
 
+Programmet utvecklades i enlighet med den föreslagna arbetsgången. Vad som hjälpte en hel del var att skapa små program för varje funktion. Med andra ord inte bara \verb!execvp! och \verb!fork! utan även för bakgrundsprocesser och signalhanterare.
+
+Bakgrundsprocesser skapades enkelt genom att inte göra någon låsande \verb!wait! efter \verb!fork!:en, utan istället installera en signalhanterare som kallade på \verb!waitpid! med \verb!WNOHANG!-flaggan så att funktionen returnerar direkt. Alternativet, ``polling'', implementeras genom att köra waitpid i början av loopen som kör nya processer, så att bakgrundsprocesser rensas upp efter att en förgrundsprocess har kört.
+
+Immunitet mot keyboard interrupts (SIGINT) görs genom att en signalhanterare installeras med handlerfunktionen \verb!SIG_IGN!. Standardhanteraren sparas undan för att sedan återinstalleras i nya förgrundsprocesser vilket gör att förgrundsprocesser kan avslutas med \verb!Ctrl+c!, men inte skalprogrammet i sig.
 
 \newpage
 \section{Tester}
