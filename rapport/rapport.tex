@@ -73,13 +73,12 @@
 \thispagestyle{empty}
 \newpage
 \setcounter{page}{1}
-\section{Problembeskivning}
+\section{Problembeskrivning}
 
 Uppgiften bestod i att implementera ett minimalt UNIX-skal. Programmet ska såsom
 andra skal kunna starta program användaren matar in till dess att användaren
 avslutar med kommandot: \verb!exit!. Skalet ska dessutom kunna hantera
 förgrunds- och bakgrunds-processer.
-
 
 \subsection{Förberedelsefrågor}
 
@@ -252,9 +251,33 @@ För att testa funktionaliten av vårat program har vi valt att köra följande 
 \newpage
 \section{Resultat}
 
-Körning av ovanstående standardiserade testfall gav följande resultat.
+Första testrundan misslyckades på testfall ''Bakgrundsprocesser och
+förgrundsprocesser´´, bakgrundsprocessen dödade förgrundsprocessen när den kört
+klart. Detta åtgärdades och på nästa testrunda blev samtliga tester godkända:
 
-\begin{testresults}{\today}
+
+\subsection*{Testrunda 1}
+\begin{testresults}{\today\ 15:04}
+\testresult{Start av förgrundsprocess}{Godkänd}
+\testresult{Tomma strängen}{Godkänd}
+\testresult{Start av bakgrundsprocess}{Godkänd}
+\testresult{Bakgrundsprocesser och förgrundsprocesser}{Underkänd}
+\testresult{Avslutning med ``exit''}{Godkänd}
+\testresult{Byte av arbetskatalog}{Godkänd}
+\testresult{Informationsutskrifter}{Godkänd}
+\testresult{Terminering med Ctrl+c}{Godkänd}
+\end{testresults}
+
+\subsection*{Testrunda 2}
+\begin{testresults}{\today\ 15:47}
+\testresult{Start av förgrundsprocess}{Godkänd}
+\testresult{Tomma strängen}{Godkänd}
+\testresult{Start av bakgrundsprocess}{Godkänd}
+\testresult{Bakgrundsprocesser och förgrundsprocesser}{Godkänd}
+\testresult{Avslutning med ``exit''}{Godkänd}
+\testresult{Byte av arbetskatalog}{Godkänd}
+\testresult{Informationsutskrifter}{Godkänd}
+\testresult{Terminering med Ctrl+c}{Godkänd}
 \end{testresults}
 
 \newpage
