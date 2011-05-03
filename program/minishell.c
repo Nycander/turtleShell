@@ -134,9 +134,8 @@ void exec_fg_cmd(int argc, char * argv[MAX_ARGUMENTS+1])
 	if (WIFEXITED(status))
 	{
 		gettimeofday(&after, NULL);
-		int sig = WTERMSIG(status);
 		long diffms = (after.tv_usec-before.tv_usec)/1000 + (after.tv_sec-before.tv_sec)*1000;
-		printf("%*s Foreground process terminated with signal %d.\n", current_dir_len+1, spid, sig);
+		printf("%*s Foreground process terminated.\n", current_dir_len+1, spid);
 		printf("%*s Wall clock time spent:\t %ld ms.\n", current_dir_len+1, spid, diffms);
 	}
 }
