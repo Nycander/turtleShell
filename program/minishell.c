@@ -106,6 +106,8 @@ void exec_fg_cmd(int argc, char * argv[MAX_ARGUMENTS+1])
 	gettimeofday(&before, NULL);
 	if (cpid == CHILD)
 	{
+		/* Ignore deaths of other processes. */
+		sighold(SIGCHLD);
 		/* Enable keyboard interrupts for foregrounds processes. */
 		sigaction(SIGINT, &sigint_action, NULL);
 		/* Execute program */
@@ -272,7 +274,14 @@ int main(int argc, char * argv[])
 		char buf[128];
 		printf("%s>", get_workingdir(buf));
 		memset(input, 0, CMD_LENGTH);
+
+		/* Ignore SIGCHLD and SIGINT */
+		sighold(SIGCHLD);
+		sighold(SIGINT);
 		fgets(input, CMD_LENGTH, stdin);
+		sigrelse(SIGINT);
+		sigrelse(SIGCHLD);
+
 		/* Exit? */
 		if (strcmp(input, "exit\n") == 0)
 		{
